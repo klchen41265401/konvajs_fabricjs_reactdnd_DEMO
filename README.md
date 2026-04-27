@@ -36,15 +36,17 @@ npm run build        # 本機 build (base = '/')
 
 ## 部署 GitHub Pages
 
-push 到 `main` 後 GitHub Actions 自動 build + 部署：
+push 到 `main` 之後 Actions 會自動 build → 把 `dist/` 推到 **`gh-pages`** 分支。
 
-```yaml
-# .github/workflows/deploy.yml 已設好
-env:
-  GITHUB_PAGES: '1'   # 讓 vite 用 /konvajs_fabricjs_reactdnd_DEMO/ 子路徑
-```
+**第一次部署需要做一件事**：
 
-第一次推完之後，去 GitHub Repo → Settings → Pages，把 Source 設成 **GitHub Actions**。
+1. 等第一次 Actions 跑完（產生 `gh-pages` 分支）
+2. 去 GitHub Repo → **Settings → Pages**
+3. **Source**: `Deploy from a branch`
+4. **Branch**: `gh-pages` / `(root)` → Save
+5. 等 1–2 分鐘，網址生效：https://klchen41265401.github.io/konvajs_fabricjs_reactdnd_DEMO/
+
+往後每次 push 到 main，Actions 都會自動更新 `gh-pages` 分支，網站會跟著更新。
 
 ## 技術棧
 
