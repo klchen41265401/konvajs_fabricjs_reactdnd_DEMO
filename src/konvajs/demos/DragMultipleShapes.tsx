@@ -44,8 +44,9 @@ export default function DragMultipleShapes() {
     if (!stage) return;
     const pos = stage.getPointerPosition();
     if (!pos) return;
-    selStart.current = pos;
-    setSelRect({ x: pos.x, y: pos.y, w: 0, h: 0 });
+    const dp = { x: pos.x / stage.scaleX(), y: pos.y / stage.scaleY() };
+    selStart.current = dp;
+    setSelRect({ x: dp.x, y: dp.y, w: 0, h: 0 });
     setSelected(new Set());
   };
 
@@ -55,10 +56,11 @@ export default function DragMultipleShapes() {
     if (!stage) return;
     const pos = stage.getPointerPosition();
     if (!pos) return;
-    const x = Math.min(selStart.current.x, pos.x);
-    const y = Math.min(selStart.current.y, pos.y);
-    const w = Math.abs(pos.x - selStart.current.x);
-    const h = Math.abs(pos.y - selStart.current.y);
+    const dp = { x: pos.x / stage.scaleX(), y: pos.y / stage.scaleY() };
+    const x = Math.min(selStart.current.x, dp.x);
+    const y = Math.min(selStart.current.y, dp.y);
+    const w = Math.abs(dp.x - selStart.current.x);
+    const h = Math.abs(dp.y - selStart.current.y);
     setSelRect({ x, y, w, h });
   };
 

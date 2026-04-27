@@ -12,15 +12,30 @@ export default function InfiniteCanvas() {
 
   useEffect(() => {
     const el = wrapRef.current; if (!el) return;
+    const findContainer = (): HTMLElement | null => {
+      let n: HTMLElement | null = el.parentElement;
+      while (n) {
+        const d = getComputedStyle(n).display;
+        if (d && !d.startsWith('inline')) return n;
+        n = n.parentElement;
+      }
+      return el.parentElement;
+    };
+    const container = findContainer();
     const update = () => {
-      const parent = el.parentElement; if (!parent) return;
-      const w = Math.max(280, parent.clientWidth - 2);
+      let availW = 760;
+      if (container) {
+        const cs = getComputedStyle(container);
+        const padX = parseFloat(cs.paddingLeft || '0') + parseFloat(cs.paddingRight || '0');
+        availW = container.clientWidth - padX - 2;
+      }
+      const w = Math.max(280, Math.min(760, availW));
       const h = Math.max(320, Math.min(520, w * 520 / 760));
       setSize(prev => prev.w === w && prev.h === h ? prev : { w, h });
     };
     update();
     const ro = new ResizeObserver(update);
-    if (el.parentElement) ro.observe(el.parentElement);
+    if (container) ro.observe(container);
     window.addEventListener('resize', update);
     return () => { ro.disconnect(); window.removeEventListener('resize', update); };
   }, []);

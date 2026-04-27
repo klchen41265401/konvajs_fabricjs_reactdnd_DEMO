@@ -45,13 +45,13 @@ export default function TenThousandShapes() {
     return () => cancelAnimationFrame(raf);
   }, []);
 
-  // Manual hit detection on mouse move over the stage
+  // Manual hit detection on mouse move over the stage (design-space coords)
   const onStageMove = () => {
     const stage = stageRef.current;
     if (!stage) return;
-    const pos = stage.getPointerPosition();
-    if (!pos) return;
-    // Check only the closest few (brute-force bounded)
+    const raw = stage.getPointerPosition();
+    if (!raw) return;
+    const pos = { x: raw.x / stage.scaleX(), y: raw.y / stage.scaleY() };
     const size = 4;
     for (let i = 0; i < shapes.length; i++) {
       const s = shapes[i];

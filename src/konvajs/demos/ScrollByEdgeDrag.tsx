@@ -78,8 +78,9 @@ export default function ScrollByEdgeDrag() {
           onMouseUp={() => { draggingRef.current = false; }}
           onMouseLeave={() => { draggingRef.current = false; }}
           onMouseMove={(e: Konva.KonvaEventObject<MouseEvent>) => {
-            const p = e.target.getStage()?.getPointerPosition();
-            if (p) pointerRef.current = p;
+            const stage = e.target.getStage();
+            const p = stage?.getPointerPosition();
+            if (p && stage) pointerRef.current = { x: p.x / stage.scaleX(), y: p.y / stage.scaleY() };
             if (draggingRef.current) animRef.current?.start();
           }}
         >

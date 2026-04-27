@@ -19,9 +19,27 @@ export default function useFabricResponsive(
     const canvas = fabricRef.current;
     if (!wrapper || !canvas) return;
 
+    // Walk up past inline / inline-block ancestors so we measure a layout-sized
+    // container (e.g. .demo-stage) instead of the shrink-to-fit .stage-wrapper,
+    // avoiding a feedback loop.
+    const findContainer = (): HTMLElement | null => {
+      let n: HTMLElement | null = wrapper.parentElement;
+      while (n) {
+        const d = getComputedStyle(n).display;
+        if (d && !d.startsWith('inline')) return n;
+        n = n.parentElement;
+      }
+      return wrapper.parentElement;
+    };
+    const container = findContainer();
+
     const update = () => {
-      const parent = wrapper.parentElement; if (!parent) return;
-      const availW = Math.max(120, parent.clientWidth - 2);
+      let availW = designWidth;
+      if (container) {
+        const cs = getComputedStyle(container);
+        const padX = parseFloat(cs.paddingLeft || '0') + parseFloat(cs.paddingRight || '0');
+        availW = Math.max(120, container.clientWidth - padX - 2);
+      }
       const scale = Math.min(1, availW / designWidth);
       const width = designWidth * scale;
       const height = designHeight * scale;
@@ -30,7 +48,7 @@ export default function useFabricResponsive(
 
     update();
     const ro = new ResizeObserver(update);
-    if (wrapper.parentElement) ro.observe(wrapper.parentElement);
+    if (container) ro.observe(container);
     window.addEventListener('resize', update);
     return () => { ro.disconnect(); window.removeEventListener('resize', update); };
   }, [wrapperRef, fabricRef, designWidth, designHeight]);
