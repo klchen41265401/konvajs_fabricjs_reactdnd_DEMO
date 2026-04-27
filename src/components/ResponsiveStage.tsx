@@ -16,8 +16,17 @@ type Props = ExtraProps & Omit<StageOwnProps, 'width' | 'height' | 'scaleX' | 's
 
 /**
  * Auto-fits a react-konva Stage to its parent width while preserving the design
- * aspect ratio. Returns a Stage whose scaleX/scaleY and width/height are driven
- * by the container's measured size.
+ * aspect ratio.
+ *
+ * Why this is non-trivial: our app wraps Stages in `.stage-wrapper { display: inline-block }`
+ * so the wrapper hugs the canvas size. If we measure el.parentElement (the wrapper),
+ * we hit a feedback loop: we size down → wrapper hugs smaller → we measure smaller →
+ * we size down again, until minScale.
+ *
+ * Strategy: prefer `el.closest('.demo-stage')` (the layout-controlled <main> from
+ * DemoLayout, guaranteed in our app). Fallback: walk up past inline / inline-block
+ * ancestors. Round all sizes to integers so sub-pixel ResizeObserver fires don't
+ * trigger extra renders.
  */
 const ResponsiveStage = forwardRef<Konva.Stage, Props>(function ResponsiveStage(props, ref) {
   const { designWidth, designHeight, children, className, maxWidth, minScale = 0.25, allowUpscale = false, ...stageProps } = props;
@@ -27,11 +36,12 @@ const ResponsiveStage = forwardRef<Konva.Stage, Props>(function ResponsiveStage(
   useLayoutEffect(() => {
     const el = wrapperRef.current; if (!el) return;
 
-    // Find the closest ancestor whose width is determined by layout (not by its
-    // shrink-to-fit content). Walk past inline / inline-block / inline-flex parents
-    // (e.g. the .stage-wrapper) so we don't create a feedback loop where the
-    // parent shrinks because we shrank, causing us to shrink again.
     const findContainer = (): HTMLElement | null => {
+      // Preferred: the well-known DemoLayout main element. Block-level, padded,
+      // grid-controlled width — never feeds back into our own size.
+      const ds = el.closest('.demo-stage');
+      if (ds instanceof HTMLElement) return ds;
+      // Fallback: walk past inline / inline-block ancestors.
       let n: HTMLElement | null = el.parentElement;
       while (n) {
         const d = getComputedStyle(n).display;
@@ -41,31 +51,36 @@ const ResponsiveStage = forwardRef<Konva.Stage, Props>(function ResponsiveStage(
       return el.parentElement;
     };
     const container = findContainer();
+    if (!container) return;
 
     const update = () => {
-      let parentW = designWidth;
-      if (container) {
-        const cs = getComputedStyle(container);
-        const padX = parseFloat(cs.paddingLeft || '0') + parseFloat(cs.paddingRight || '0');
-        parentW = container.clientWidth - padX;
-      }
-      const availW = Math.max(120, parentW - 2);
-      const cap = maxWidth ?? designWidth;
-      const targetW = Math.min(availW, allowUpscale ? Infinity : cap);
-      const scale = Math.max(minScale, targetW / designWidth);
-      const width = designWidth * scale;
-      const height = designHeight * scale;
-      setSize(prev => (Math.abs(prev.width - width) < 0.5 ? prev : { width, height, scale }));
+      const cs = getComputedStyle(container);
+      const padX = (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0);
+      const inner = container.clientWidth - padX;
+      if (inner <= 0) return;
+      const cap = allowUpscale ? Number.POSITIVE_INFINITY : (maxWidth ?? designWidth);
+      const targetW = Math.min(inner, cap);
+      const rawScale = Math.max(minScale, targetW / designWidth);
+      // Floor to integer pixels so sub-pixel measurement noise doesn't keep
+      // re-triggering renders.
+      const width = Math.floor(designWidth * rawScale);
+      const height = Math.floor(designHeight * rawScale);
+      const scale = width / designWidth;
+      setSize(prev => (prev.width === width && prev.height === height ? prev : { width, height, scale }));
     };
+
     update();
     const ro = new ResizeObserver(update);
-    if (container) ro.observe(container);
-    window.addEventListener('resize', update);
-    return () => { ro.disconnect(); window.removeEventListener('resize', update); };
+    ro.observe(container);
+    return () => { ro.disconnect(); };
   }, [designWidth, designHeight, maxWidth, minScale, allowUpscale]);
 
   return (
-    <div ref={wrapperRef} className={`responsive-stage ${className || ''}`} style={{ width: size.width, height: size.height }}>
+    <div
+      ref={wrapperRef}
+      className={`responsive-stage ${className || ''}`}
+      style={{ width: size.width, height: size.height }}
+    >
       <Stage
         ref={ref}
         width={size.width}
