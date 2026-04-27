@@ -1,19 +1,18 @@
-import { useEffect } from 'react';
-import { DndProvider, useDrag, useDrop } from 'react-dnd';
-import { getEmptyImage } from 'react-dnd-html5-backend';
+import { DndProvider, useDrag, useDragLayer, useDrop } from 'react-dnd';
 import { TouchBackend } from 'react-dnd-touch-backend';
-import DemoLayout from '../../components/DemoLayout';
 import { useState } from 'react';
+import DemoLayout from '../../components/DemoLayout';
 
 const ITEM = 'handle-box';
 
+interface DragItem { label: string; color: string; }
+
 function BoxWithHandle({ label, color }: { label: string; color: string }) {
-  const [{ isDragging }, drag, preview] = useDrag(() => ({
+  const [{ isDragging }, drag] = useDrag(() => ({
     type: ITEM,
-    item: { label },
+    item: { label, color } as DragItem,
     collect: (m) => ({ isDragging: m.isDragging() }),
   }));
-  useEffect(() => { preview(getEmptyImage(), { captureDraggingState: true }); }, [preview]);
 
   return (
     <div
@@ -23,25 +22,30 @@ function BoxWithHandle({ label, color }: { label: string; color: string }) {
         color: '#fff',
         display: 'flex',
         alignItems: 'center',
-        gap: 8,
+        gap: 10,
         padding: 10,
         opacity: isDragging ? 0.4 : 1,
+        cursor: 'default',
       }}
     >
       <span
-        ref={drag as any}
+        ref={drag as unknown as React.Ref<HTMLSpanElement>}
         style={{
-          cursor: 'move',
-          padding: '2px 6px',
+          cursor: 'grab',
+          padding: '4px 8px',
           background: 'rgba(0,0,0,.35)',
           borderRadius: 4,
           userSelect: 'none',
+          touchAction: 'none',
+          fontSize: 18,
+          lineHeight: 1,
         }}
         title="只有這個把手可以拖"
       >
         ≡
       </span>
-      <span>{label}（整個 box 其他部分拖不動）</span>
+      <span style={{ flex: 1 }}>{label}</span>
+      <span style={{ opacity: 0.7, fontSize: 12 }}>← 整塊其他位置拖不動</span>
     </div>
   );
 }
@@ -49,10 +53,45 @@ function BoxWithHandle({ label, color }: { label: string; color: string }) {
 function Dustbin({ onDrop }: { onDrop: (l: string) => void }) {
   const [{ isOver, canDrop }, drop] = useDrop(() => ({
     accept: ITEM,
-    drop: (item: { label: string }) => onDrop(item.label),
+    drop: (item: DragItem) => onDrop(item.label),
     collect: (m) => ({ isOver: m.isOver(), canDrop: m.canDrop() }),
   }));
-  return <div ref={drop as any} className={`dustbin${isOver ? ' over' : ''}${canDrop && !isOver ? ' accept' : ''}`}>放到這</div>;
+  return (
+    <div ref={drop as unknown as React.Ref<HTMLDivElement>} className={`dustbin${isOver ? ' over' : ''}${canDrop && !isOver ? ' accept' : ''}`}>
+      放到這裡
+    </div>
+  );
+}
+
+function CustomDragLayer() {
+  const { isDragging, item, currentOffset } = useDragLayer((monitor) => ({
+    item: monitor.getItem() as DragItem | null,
+    currentOffset: monitor.getClientOffset(),
+    isDragging: monitor.isDragging(),
+  }));
+
+  if (!isDragging || !item || !currentOffset) return null;
+
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        pointerEvents: 'none',
+        zIndex: 1000,
+        left: currentOffset.x + 12,
+        top: currentOffset.y + 12,
+        background: item.color,
+        color: '#fff',
+        padding: '8px 14px',
+        borderRadius: 8,
+        boxShadow: '0 8px 24px rgba(0,0,0,.4)',
+        fontWeight: 600,
+        userSelect: 'none',
+      }}
+    >
+      🤚 拖曳中：{item.label}
+    </div>
+  );
 }
 
 export default function CustomizeHandles() {
@@ -66,21 +105,22 @@ export default function CustomizeHandles() {
       sidebar={
         <>
           <div className="info-box">
-            <strong>Drag Handle + Empty Preview</strong><br />
-            <code>drag</code> ref 只掛在左邊的 ≡ 小把手，整塊 box 其他部分不會被拖。
-            另外以 <code>preview(getEmptyImage())</code> 隱藏預設的 drag preview 圖。
+            <strong>Drag Handle + Custom Preview</strong><br />
+            <code>drag</code> ref 只掛在左側 ≡ 把手 → 整個 box 其他位置都拖不動。<br />
+            自訂 preview 用 <code>useDragLayer</code> 取代瀏覽器原生 ghost，跟著滑鼠 / 觸控位置即時繪製。
           </div>
           <div>最近 drop：<strong>{dropped}</strong></div>
         </>
       }
     >
-      <DndProvider backend={TouchBackend} options={{ enableMouseEvents: true, delayTouchStart: 50 }}>
+      <DndProvider backend={TouchBackend} options={{ enableMouseEvents: true, delayMouseStart: 0, delayTouchStart: 50 }}>
         <div className="dnd-stage" style={{ flexDirection: 'column', gap: 16 }}>
           <BoxWithHandle label="任務 A" color="#2c3e50" />
           <BoxWithHandle label="任務 B" color="#16a085" />
           <BoxWithHandle label="任務 C" color="#c0392b" />
           <Dustbin onDrop={setDropped} />
         </div>
+        <CustomDragLayer />
       </DndProvider>
     </DemoLayout>
   );

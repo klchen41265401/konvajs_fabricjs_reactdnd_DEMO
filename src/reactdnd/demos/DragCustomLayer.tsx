@@ -1,6 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { DndProvider, useDrag, useDragLayer, useDrop } from 'react-dnd';
-import { getEmptyImage } from 'react-dnd-html5-backend';
 import { TouchBackend } from 'react-dnd-touch-backend';
 import DemoLayout from '../../components/DemoLayout';
 
@@ -9,19 +8,17 @@ const ITEM = 'layer-box';
 type Pos = { id: string; x: number; y: number; label: string; color: string };
 
 function DraggableBox({ pos }: { pos: Pos }) {
-  const [{ isDragging }, drag, preview] = useDrag(() => ({
+  const [{ isDragging }, drag] = useDrag(() => ({
     type: ITEM,
     item: { id: pos.id, x: pos.x, y: pos.y, label: pos.label, color: pos.color },
     collect: (m) => ({ isDragging: m.isDragging() }),
   }), [pos]);
 
-  useEffect(() => { preview(getEmptyImage(), { captureDraggingState: true }); }, [preview]);
-
   return (
     <div
-      ref={drag as any}
+      ref={drag as unknown as React.Ref<HTMLDivElement>}
       className="box"
-      style={{ position: 'absolute', left: pos.x, top: pos.y, background: pos.color, color: '#fff', opacity: isDragging ? 0 : 1, touchAction: 'none' }}
+      style={{ position: 'absolute', left: pos.x, top: pos.y, background: pos.color, color: '#fff', opacity: isDragging ? 0 : 1, touchAction: 'none', cursor: 'grab' }}
     >
       {pos.label}
     </div>
