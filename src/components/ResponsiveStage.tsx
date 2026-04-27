@@ -26,19 +26,40 @@ const ResponsiveStage = forwardRef<Konva.Stage, Props>(function ResponsiveStage(
 
   useLayoutEffect(() => {
     const el = wrapperRef.current; if (!el) return;
+
+    // Find the closest ancestor whose width is determined by layout (not by its
+    // shrink-to-fit content). Walk past inline / inline-block / inline-flex parents
+    // (e.g. the .stage-wrapper) so we don't create a feedback loop where the
+    // parent shrinks because we shrank, causing us to shrink again.
+    const findContainer = (): HTMLElement | null => {
+      let n: HTMLElement | null = el.parentElement;
+      while (n) {
+        const d = getComputedStyle(n).display;
+        if (d && !d.startsWith('inline')) return n;
+        n = n.parentElement;
+      }
+      return el.parentElement;
+    };
+    const container = findContainer();
+
     const update = () => {
-      const parentW = el.parentElement?.clientWidth ?? designWidth;
+      let parentW = designWidth;
+      if (container) {
+        const cs = getComputedStyle(container);
+        const padX = parseFloat(cs.paddingLeft || '0') + parseFloat(cs.paddingRight || '0');
+        parentW = container.clientWidth - padX;
+      }
       const availW = Math.max(120, parentW - 2);
       const cap = maxWidth ?? designWidth;
       const targetW = Math.min(availW, allowUpscale ? Infinity : cap);
       const scale = Math.max(minScale, targetW / designWidth);
       const width = designWidth * scale;
       const height = designHeight * scale;
-      setSize(prev => (prev.width === width && prev.height === height ? prev : { width, height, scale }));
+      setSize(prev => (Math.abs(prev.width - width) < 0.5 ? prev : { width, height, scale }));
     };
     update();
     const ro = new ResizeObserver(update);
-    if (el.parentElement) ro.observe(el.parentElement);
+    if (container) ro.observe(container);
     window.addEventListener('resize', update);
     return () => { ro.disconnect(); window.removeEventListener('resize', update); };
   }, [designWidth, designHeight, maxWidth, minScale, allowUpscale]);
