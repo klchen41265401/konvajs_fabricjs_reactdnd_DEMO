@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Layer, Sprite } from 'react-konva';
+import { Layer, Sprite, Image as KonvaImage } from 'react-konva';
 import type Konva from 'konva';
 import DemoLayout from '../../components/DemoLayout';
 import ResponsiveStage from '../../components/ResponsiveStage';
+import useFileSource from '../../components/useFileSource';
 
 function buildSpriteSheet(): HTMLImageElement {
   const FRAME = 64;
@@ -36,6 +37,8 @@ export default function GifAnimation() {
   const [running, setRunning] = useState(true);
   const [frameRate, setFrameRate] = useState(6);
   const imageRef = useRef<HTMLImageElement | null>(null);
+  const { src: uploadedSrc, filename, FileInput } = useFileSource('', 'image/*');
+  const [uploadedImg, setUploadedImg] = useState<HTMLImageElement | null>(null);
 
   const sheet = useMemo(() => buildSpriteSheet(), []);
 
@@ -45,6 +48,14 @@ export default function GifAnimation() {
     else sheet.addEventListener('load', onLoad);
     return () => sheet.removeEventListener('load', onLoad);
   }, [sheet]);
+
+  useEffect(() => {
+    if (!filename) { setUploadedImg(null); return; }
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => setUploadedImg(img);
+    img.src = uploadedSrc;
+  }, [uploadedSrc, filename]);
 
   useEffect(() => {
     const s = spriteRef.current;
@@ -65,6 +76,7 @@ export default function GifAnimation() {
   return (
     <DemoLayout title="🎞️ GIF / Sprite Animation" backTo="/konvajs" backLabel="← Konva.js 目錄" sidebar={
       <>
+        <FileInput label="自訂圖片 (替代 sprite sheet)" />
         <div className="control-group">
           <button type="button" onClick={() => setRunning(r => !r)}>{running ? '⏸️ 暫停' : '▶️ 播放'}</button>
         </div>
@@ -75,7 +87,15 @@ export default function GifAnimation() {
       <div className="stage-wrapper">
         <ResponsiveStage designWidth={720} designHeight={360}>
           <Layer>
-            {ready && imageRef.current && (
+            {uploadedImg ? (
+              <KonvaImage
+                image={uploadedImg}
+                x={360 - Math.min(uploadedImg.width, 480) / 2}
+                y={180 - Math.min(uploadedImg.height, 280) / 2}
+                width={Math.min(uploadedImg.width, 480)}
+                height={Math.min(uploadedImg.height, 280)}
+              />
+            ) : ready && imageRef.current && (
               <Sprite
                 ref={spriteRef}
                 x={300}

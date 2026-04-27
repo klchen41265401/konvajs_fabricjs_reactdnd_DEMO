@@ -3,12 +3,14 @@ import { Layer, Rect, Image as KonvaImage, Group, Text } from 'react-konva';
 import useImage from 'use-image';
 import DemoLayout from '../../components/DemoLayout';
 import ResponsiveStage from '../../components/ResponsiveStage';
+import useFileSource from '../../components/useFileSource';
 
 type Mode = 'contain' | 'cover';
 type Position = 'center' | 'left' | 'right' | 'top' | 'bottom';
 
 export default function ImageScaleToFit() {
-  const [img] = useImage('https://picsum.photos/id/1015/800/600', 'anonymous');
+  const { src, FileInput } = useFileSource('https://picsum.photos/id/1015/800/600', 'image/*');
+  const [img] = useImage(src, 'anonymous');
   const [mode, setMode] = useState<Mode>('contain');
   const [frameW, setFrameW] = useState(400);
   const [frameH, setFrameH] = useState(300);
@@ -71,6 +73,7 @@ export default function ImageScaleToFit() {
   return (
     <DemoLayout title="🖼️ Image Scale to Fit" backTo="/konvajs" backLabel="← Konva.js 目錄" sidebar={
       <>
+        <FileInput label="圖片" />
         <div className="control-group">
           <label>模式</label>
           <select value={mode} onChange={e => setMode(e.target.value as Mode)}>

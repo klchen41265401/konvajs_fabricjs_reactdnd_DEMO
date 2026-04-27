@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { fabric } from 'fabric';
 import DemoLayout from '../../components/DemoLayout';
 import useFabricResponsive from '../../components/useFabricResponsive';
+import useFileSource from '../../components/useFileSource';
 
 export default function CustomFilter() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -9,6 +10,7 @@ export default function CustomFilter() {
   const fabRef = useRef<fabric.Canvas | null>(null);
   const wrapperRef = useRef<HTMLDivElement | null>(null);
   const [intensity, setIntensity] = useState(0.5);
+  const { src, FileInput } = useFileSource('https://picsum.photos/id/1025/600/420', 'image/*');
 
   useEffect(() => {
     const canvas = new fabric.Canvas(canvasRef.current!);
@@ -28,17 +30,27 @@ export default function CustomFilter() {
       }
     });
 
-    fabric.Image.fromURL('https://picsum.photos/id/1025/600/420', img => {
-      img.scaleToWidth(600);
-      img.set({ left: 40, top: 40, selectable: false });
-      img.filters = [new ((fabric.Image.filters as any).Redify)({ intensity: 0.5 })];
-      img.applyFilters();
-      imgRef.current = img;
-      canvas.add(img);
-    }, { crossOrigin: 'anonymous' });
-
     return () => { delete (fabric.Image.filters as any).Redify; canvas.dispose(); };
   }, []);
+
+  useEffect(() => {
+    const canvas = fabRef.current; if (!canvas) return;
+    canvas.getObjects().filter(o => o.type === 'image').forEach(o => canvas.remove(o));
+    imgRef.current = null;
+    fabric.Image.fromURL(src, img => {
+      img.scaleToWidth(600);
+      img.set({ left: 40, top: 40, selectable: false });
+      const Redify = (fabric.Image.filters as any).Redify;
+      if (Redify) {
+        img.filters = [new Redify({ intensity })];
+        img.applyFilters();
+      }
+      imgRef.current = img;
+      canvas.add(img);
+      canvas.requestRenderAll();
+    }, { crossOrigin: 'anonymous' });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [src]);
 
   useEffect(() => {
     const img = imgRef.current; if (!img) return;
@@ -52,6 +64,8 @@ export default function CustomFilter() {
   return (
     <DemoLayout title="🎨 Custom filter (Redify)" backTo="/fabricjs" backLabel="← Fabric.js 目錄" sidebar={
       <>
+        <h3>來源圖片</h3>
+        <FileInput />
         <h3>強度</h3>
         <div className="control-group">
           <label>Intensity: {intensity.toFixed(2)}</label>

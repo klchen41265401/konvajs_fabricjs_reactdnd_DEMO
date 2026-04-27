@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Layer, Circle } from 'react-konva';
 import DemoLayout from '../../components/DemoLayout';
 import ResponsiveStage from '../../components/ResponsiveStage';
+import useFileSource from '../../components/useFileSource';
 
 const BGS = [
   { id: 'a', label: '山景', url: 'https://picsum.photos/seed/mountain-bg/720/540' },
@@ -11,6 +12,8 @@ const BGS = [
 
 export default function CanvasBackground() {
   const [bg, setBg] = useState(BGS[0]);
+  const { src: customSrc, FileInput, filename } = useFileSource(BGS[0].url, 'image/*');
+  const activeUrl = filename ? customSrc : bg.url;
 
   const circles = [
     { x: 180, y: 200, r: 60, fill: 'rgba(239,83,80,0.8)' },
@@ -29,13 +32,14 @@ export default function CanvasBackground() {
             <button type="button" key={b.id} onClick={() => setBg(b)} style={{ fontWeight: bg.id === b.id ? 700 : 400 }}>{b.label}</button>
           ))}
         </div>
+        <FileInput label="上傳自訂背景" />
         <div className="info-box">背景以 CSS background-image 設定在外框 div，Konva Stage / Layer 保持透明，圖形便會疊加在 CSS 背景之上。</div>
       </>
     }>
       <div
         className="stage-wrapper"
         style={{
-          backgroundImage: `url(${bg.url})`,
+          backgroundImage: `url(${activeUrl})`,
           backgroundSize: 'cover',
           backgroundPosition: 'center',
         }}

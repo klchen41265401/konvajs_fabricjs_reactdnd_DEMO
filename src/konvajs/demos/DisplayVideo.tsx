@@ -3,6 +3,9 @@ import { Layer, Image as KonvaImage } from 'react-konva';
 import Konva from 'konva';
 import DemoLayout from '../../components/DemoLayout';
 import ResponsiveStage from '../../components/ResponsiveStage';
+import useFileSource from '../../components/useFileSource';
+
+const DEFAULT_VIDEO = 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4';
 
 export default function DisplayVideo() {
   const imageRef = useRef<Konva.Image | null>(null);
@@ -10,20 +13,31 @@ export default function DisplayVideo() {
   const [ready, setReady] = useState(false);
   const [playing, setPlaying] = useState(true);
   const [volume, setVolume] = useState(0);
+  const { src, FileInput } = useFileSource(DEFAULT_VIDEO, 'video/*');
 
   useEffect(() => {
     const video = document.createElement('video');
-    video.src = 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4';
+    video.src = src;
     video.crossOrigin = 'anonymous';
     video.autoplay = true;
     video.muted = true;
     video.loop = true;
     video.playsInline = true;
     videoRef.current = video;
-    video.addEventListener('loadedmetadata', () => setReady(true));
+    const onMeta = () => setReady(true);
+    video.addEventListener('loadedmetadata', onMeta);
     video.play().catch(() => { /* ignore */ });
-    return () => { video.pause(); video.src = ''; };
+    return () => { video.removeEventListener('loadedmetadata', onMeta); video.pause(); video.src = ''; };
   }, []);
+
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    setReady(false);
+    v.src = src;
+    v.load();
+    v.play().catch(() => { /* ignore */ });
+  }, [src]);
 
   useEffect(() => {
     if (!ready) return;
@@ -51,6 +65,7 @@ export default function DisplayVideo() {
   return (
     <DemoLayout title="🎬 Display Video on Canvas" backTo="/konvajs" backLabel="← Konva.js 目錄" sidebar={
       <>
+        <FileInput label="本地影片" />
         <div className="control-group">
           <button type="button" onClick={() => setPlaying(p => !p)}>{playing ? '⏸️ 暫停' : '▶️ 播放'}</button>
         </div>

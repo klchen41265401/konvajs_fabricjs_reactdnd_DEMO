@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { fabric } from 'fabric';
 import DemoLayout from '../../components/DemoLayout';
 import useFabricResponsive from '../../components/useFabricResponsive';
+import useFileSource from '../../components/useFileSource';
 
 const SAMPLE = 'https://picsum.photos/id/1018/700/500';
 type Shape = 'circle' | 'rect' | 'triangle' | 'star';
@@ -14,19 +15,27 @@ export default function ClippingMasking() {
   const [shape, setShape] = useState<Shape>('circle');
   const [inverted, setInverted] = useState(false);
   const [absolute, setAbsolute] = useState(false);
+  const { src, FileInput } = useFileSource(SAMPLE, 'image/*');
 
   useEffect(() => {
     const canvas = new fabric.Canvas(canvasRef.current!);
     fabRef.current = canvas;
-    fabric.Image.fromURL(SAMPLE, img => {
+    return () => { canvas.dispose(); };
+  }, []);
+
+  useEffect(() => {
+    const canvas = fabRef.current; if (!canvas) return;
+    canvas.getObjects().filter(o => o.type === 'image').forEach(o => canvas.remove(o));
+    imgRef.current = null;
+    fabric.Image.fromURL(src, img => {
       img.set({ left: 20, top: 20, selectable: true });
       imgRef.current = img;
       canvas.add(img);
-      applyClip('circle', false, false);
+      applyClip(shape, inverted, absolute);
+      canvas.requestRenderAll();
     }, { crossOrigin: 'anonymous' });
-    return () => { canvas.dispose(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [src]);
 
   const makeShape = (s: Shape): fabric.Object => {
     if (s === 'circle') return new fabric.Circle({ radius: 140, originX: 'center', originY: 'center' });
@@ -60,6 +69,8 @@ export default function ClippingMasking() {
   return (
     <DemoLayout title="🎨 Clipping and masking" backTo="/fabricjs" backLabel="← Fabric.js 目錄" sidebar={
       <>
+        <h3>來源圖片</h3>
+        <FileInput label="圖片" />
         <h3>遮罩形狀</h3>
         <div className="control-group">
           {(['circle', 'rect', 'triangle', 'star'] as Shape[]).map(s => (

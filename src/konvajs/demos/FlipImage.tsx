@@ -3,9 +3,11 @@ import { Layer, Image as KonvaImage, Group } from 'react-konva';
 import useImage from 'use-image';
 import DemoLayout from '../../components/DemoLayout';
 import ResponsiveStage from '../../components/ResponsiveStage';
+import useFileSource from '../../components/useFileSource';
 
 export default function FlipImage() {
-  const [img] = useImage('https://picsum.photos/id/1018/480/320', 'anonymous');
+  const { src, FileInput } = useFileSource('https://picsum.photos/id/1018/480/320', 'image/*');
+  const [img] = useImage(src, 'anonymous');
   const [flipX, setFlipX] = useState(1);
   const [flipY, setFlipY] = useState(1);
 
@@ -15,6 +17,7 @@ export default function FlipImage() {
   return (
     <DemoLayout title="🔁 Flip Image" backTo="/konvajs" backLabel="← Konva.js 目錄" sidebar={
       <>
+        <FileInput label="圖片" />
         <div className="control-group">
           <button type="button" onClick={() => setFlipX(x => -x)}>⇆ 水平翻轉</button>
           <button type="button" onClick={() => setFlipY(y => -y)}>⇅ 垂直翻轉</button>

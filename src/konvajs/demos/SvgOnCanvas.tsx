@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Layer, Path } from 'react-konva';
 import DemoLayout from '../../components/DemoLayout';
 import ResponsiveStage from '../../components/ResponsiveStage';
+import useFileSource from '../../components/useFileSource';
 
 interface SvgShape {
   id: string;
@@ -44,18 +45,48 @@ const SHAPES: SvgShape[] = [
 ];
 
 export default function SvgOnCanvas() {
-  const [visible, setVisible] = useState<Record<string, boolean>>({ star: true, heart: true, arrow: true });
-  const [colors, setColors] = useState<Record<string, string>>(Object.fromEntries(SHAPES.map(s => [s.id, s.color])));
+  const [visible, setVisible] = useState<Record<string, boolean>>({ star: true, heart: true, arrow: true, uploaded: true });
+  const [colors, setColors] = useState<Record<string, string>>({ ...Object.fromEntries(SHAPES.map(s => [s.id, s.color])), uploaded: '#10b981' });
+  const [uploadedPath, setUploadedPath] = useState<string | null>(null);
+  const { src, filename, FileInput } = useFileSource('', '.svg,image/svg+xml');
+
+  useEffect(() => {
+    if (!filename) return;
+    fetch(src)
+      .then(r => r.text())
+      .then(text => {
+        try {
+          const doc = new DOMParser().parseFromString(text, 'image/svg+xml');
+          const parserError = doc.querySelector('parsererror');
+          if (parserError) throw new Error('SVG 解析失敗');
+          const path = doc.querySelector('path');
+          const d = path?.getAttribute('d');
+          if (!d) throw new Error('找不到 <path d="...">');
+          setUploadedPath(d);
+        } catch (err) {
+          alert(`無法解析 SVG: ${(err as Error).message}`);
+          setUploadedPath(null);
+        }
+      })
+      .catch(err => alert(`讀取 SVG 失敗: ${err.message}`));
+  }, [src, filename]);
 
   return (
     <DemoLayout title="🖇️ SVG on Canvas" backTo="/konvajs" backLabel="← Konva.js 目錄" sidebar={
       <>
+        <FileInput label="上傳 SVG 檔" />
         {SHAPES.map(s => (
           <div className="control-group" key={s.id}>
             <label><input type="checkbox" checked={visible[s.id]} onChange={e => setVisible(v => ({ ...v, [s.id]: e.target.checked }))} /> {s.label}</label>
             <input type="color" value={colors[s.id]} onChange={e => setColors(c => ({ ...c, [s.id]: e.target.value }))} />
           </div>
         ))}
+        {uploadedPath && (
+          <div className="control-group">
+            <label><input type="checkbox" checked={!!visible.uploaded} onChange={e => setVisible(v => ({ ...v, uploaded: e.target.checked }))} /> 📤 已上傳 SVG</label>
+            <input type="color" value={colors.uploaded} onChange={e => setColors(c => ({ ...c, uploaded: e.target.value }))} />
+          </div>
+        )}
         <div className="info-box">Konva.Path 接受 SVG path 的 d 字串，便能直接把 SVG 圖示繪到 Canvas 並享有旋轉、填色、拖曳等能力。</div>
       </>
     }>
@@ -76,6 +107,18 @@ export default function SvgOnCanvas() {
                 draggable
               />
             ))}
+            {uploadedPath && visible.uploaded && (
+              <Path
+                key={`uploaded-${uploadedPath.length}`}
+                x={300}
+                y={250}
+                data={uploadedPath}
+                fill={colors.uploaded}
+                stroke="#333"
+                strokeWidth={1}
+                draggable
+              />
+            )}
           </Layer>
         </ResponsiveStage>
       </div>

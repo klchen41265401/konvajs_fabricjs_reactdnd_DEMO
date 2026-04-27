@@ -4,9 +4,11 @@ import Konva from 'konva';
 import useImage from 'use-image';
 import DemoLayout from '../../components/DemoLayout';
 import ResponsiveStage from '../../components/ResponsiveStage';
+import useFileSource from '../../components/useFileSource';
 
 export default function CropImage() {
-  const [img] = useImage('https://picsum.photos/id/1018/700/500', 'anonymous');
+  const { src, FileInput } = useFileSource('https://picsum.photos/id/1018/700/500', 'image/*');
+  const [img] = useImage(src, 'anonymous');
   const initial = { x: 120, y: 80, w: 360, h: 260 };
   const [crop, setCrop] = useState(initial);
   const stageRef = useRef<Konva.Stage | null>(null);
@@ -50,6 +52,7 @@ export default function CropImage() {
   return (
     <DemoLayout title="🖼️ Crop Image" backTo="/konvajs" backLabel="← Konva.js 目錄" sidebar={
       <>
+        <FileInput label="要裁切的圖片" />
         <div className="control-group"><button type="button" onClick={exportCropped}>匯出裁切 PNG</button></div>
         <div className="control-group"><button type="button" onClick={() => setCrop(initial)}>重設</button></div>
         <div className="info-box">拖曳四個角落控制點來調整裁切範圍，按下匯出按鈕可下載裁切後的影像。</div>

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { fabric } from 'fabric';
 import DemoLayout from '../../components/DemoLayout';
 import useFabricResponsive from '../../components/useFabricResponsive';
+import useFileSource from '../../components/useFileSource';
 
 const SVG = `
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
@@ -22,11 +23,12 @@ export default function SvgCaching() {
   const fabRef = useRef<fabric.Canvas | null>(null);
   const wrapperRef = useRef<HTMLDivElement | null>(null);
   const [caching, setCaching] = useState(true);
+  const { src, filename, FileInput } = useFileSource('', '.svg,image/svg+xml');
 
-  useEffect(() => {
-    const canvas = new fabric.Canvas(canvasRef.current!);
-    fabRef.current = canvas;
-    fabric.loadSVGFromString(SVG, (objs, opts) => {
+  const renderSvg = (svgText: string) => {
+    const canvas = fabRef.current; if (!canvas) return;
+    canvas.clear();
+    fabric.loadSVGFromString(svgText, (objs, opts) => {
       const group = fabric.util.groupSVGElements(objs, opts);
       group.set({ left: 40, top: 40 });
       (group as any).objectCaching = caching;
@@ -39,10 +41,26 @@ export default function SvgCaching() {
           canvas.add(c);
         });
       }
+      canvas.requestRenderAll();
     });
+  };
+
+  useEffect(() => {
+    const canvas = new fabric.Canvas(canvasRef.current!);
+    fabRef.current = canvas;
+    renderSvg(SVG);
     return () => { canvas.dispose(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (!filename) return;
+    fetch(src)
+      .then(r => r.text())
+      .then(text => renderSvg(text))
+      .catch(err => alert(`讀取 SVG 失敗: ${err.message}`));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filename]);
 
   useEffect(() => {
     const canvas = fabRef.current; if (!canvas) return;
@@ -55,6 +73,7 @@ export default function SvgCaching() {
   return (
     <DemoLayout title="🎨 SVG caching" backTo="/fabricjs" backLabel="← Fabric.js 目錄" sidebar={
       <>
+        <FileInput label="上傳 SVG" />
         <h3>快取</h3>
         <div className="control-group">
           <label><input type="checkbox" checked={caching} onChange={e => setCaching(e.target.checked)} /> objectCaching</label>

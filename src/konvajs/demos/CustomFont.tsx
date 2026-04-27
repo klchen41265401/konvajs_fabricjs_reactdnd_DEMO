@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Layer, Text, Rect } from 'react-konva';
 import DemoLayout from '../../components/DemoLayout';
 import ResponsiveStage from '../../components/ResponsiveStage';
+import useFileSource from '../../components/useFileSource';
 
 const FONTS = [
   { name: 'Bungee', query: 'Bungee' },
@@ -9,12 +10,16 @@ const FONTS = [
   { name: 'Press Start 2P', query: 'Press+Start+2P' },
 ];
 
+const USER_FONT = 'UserFont';
+
 export default function CustomFont() {
   const [font, setFont] = useState(FONTS[0].name);
   const [text, setText] = useState('Hello Konva!');
   const [size, setSize] = useState(56);
   const [color, setColor] = useState('#111827');
   const [loaded, setLoaded] = useState(false);
+  const [userFontReady, setUserFontReady] = useState(false);
+  const { src, filename, FileInput } = useFileSource('', '.ttf,.otf,.woff,.woff2');
 
   useEffect(() => {
     const href = `https://fonts.googleapis.com/css2?${FONTS.map(f => `family=${f.query}`).join('&')}&display=swap`;
@@ -40,13 +45,28 @@ export default function CustomFont() {
     }
   }, [font, size, loaded]);
 
+  useEffect(() => {
+    if (!filename) return;
+    const face = new (window as any).FontFace(USER_FONT, `url(${src})`);
+    face.load().then((loaded: any) => {
+      (document as any).fonts.add(loaded);
+      setUserFontReady(true);
+      setFont(USER_FONT);
+    }).catch((err: any) => {
+      console.warn('font load failed', err);
+      alert(`字型載入失敗: ${err.message ?? err}`);
+    });
+  }, [src, filename]);
+
   return (
     <DemoLayout title="🔤 Custom Font" backTo="/konvajs" backLabel="← Konva.js 目錄" sidebar={
       <>
+        <FileInput label="上傳字型檔" />
         <div className="control-group">
           <label>字體</label>
           <select value={font} onChange={e => setFont(e.target.value)}>
             {FONTS.map(f => <option key={f.name} value={f.name}>{f.name}</option>)}
+            {userFontReady && <option value={USER_FONT}>📤 User Font</option>}
           </select>
         </div>
         <div className="control-group">

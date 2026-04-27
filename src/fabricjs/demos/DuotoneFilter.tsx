@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { fabric } from 'fabric';
 import DemoLayout from '../../components/DemoLayout';
 import useFabricResponsive from '../../components/useFabricResponsive';
+import useFileSource from '../../components/useFileSource';
 
 const hexToRgb = (h: string): [number, number, number] => {
   const n = parseInt(h.slice(1), 16);
@@ -15,6 +16,7 @@ export default function DuotoneFilter() {
   const wrapperRef = useRef<HTMLDivElement | null>(null);
   const [dark, setDark] = useState('#1e3a8a');
   const [light, setLight] = useState('#fde68a');
+  const { src, FileInput } = useFileSource('https://picsum.photos/id/177/640/420', 'image/*');
 
   useEffect(() => {
     const canvas = new fabric.Canvas(canvasRef.current!);
@@ -38,17 +40,26 @@ export default function DuotoneFilter() {
       }
     });
 
-    fabric.Image.fromURL('https://picsum.photos/id/177/640/420', img => {
+    return () => { delete (fabric.Image.filters as any).Duotone; canvas.dispose(); };
+  }, []);
+
+  useEffect(() => {
+    const canvas = fabRef.current; if (!canvas) return;
+    canvas.getObjects().filter(o => o.type === 'image').forEach(o => canvas.remove(o));
+    imgRef.current = null;
+    fabric.Image.fromURL(src, img => {
       img.set({ left: 20, top: 20, selectable: false });
       imgRef.current = img;
-      img.filters = [new ((fabric.Image.filters as any).Duotone)({ dark: hexToRgb(dark), light: hexToRgb(light) })];
-      img.applyFilters();
+      const Duotone = (fabric.Image.filters as any).Duotone;
+      if (Duotone) {
+        img.filters = [new Duotone({ dark: hexToRgb(dark), light: hexToRgb(light) })];
+        img.applyFilters();
+      }
       canvas.add(img);
+      canvas.requestRenderAll();
     }, { crossOrigin: 'anonymous' });
-
-    return () => { delete (fabric.Image.filters as any).Duotone; canvas.dispose(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [src]);
 
   useEffect(() => {
     const img = imgRef.current; if (!img) return;
@@ -62,6 +73,8 @@ export default function DuotoneFilter() {
   return (
     <DemoLayout title="🎨 Duotone filter" backTo="/fabricjs" backLabel="← Fabric.js 目錄" sidebar={
       <>
+        <h3>來源圖片</h3>
+        <FileInput />
         <h3>雙色調</h3>
         <div className="control-group"><label>暗部</label><input type="color" value={dark} onChange={e => setDark(e.target.value)} /></div>
         <div className="control-group"><label>亮部</label><input type="color" value={light} onChange={e => setLight(e.target.value)} /></div>

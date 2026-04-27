@@ -4,9 +4,11 @@ import Konva from 'konva';
 import useImage from 'use-image';
 import DemoLayout from '../../components/DemoLayout';
 import ResponsiveStage from '../../components/ResponsiveStage';
+import useFileSource from '../../components/useFileSource';
 
 export default function Watermark() {
-  const [img] = useImage('https://picsum.photos/id/1015/720/540', 'anonymous');
+  const { src, FileInput } = useFileSource('https://picsum.photos/id/1015/720/540', 'image/*');
+  const [img] = useImage(src, 'anonymous');
   const [text, setText] = useState('© CONFIDENTIAL');
   const [opacity, setOpacity] = useState(0.3);
   const [color, setColor] = useState('#ffffff');
@@ -30,6 +32,7 @@ export default function Watermark() {
   return (
     <DemoLayout title="🖼️ Watermark" backTo="/konvajs" backLabel="← Konva.js 目錄" sidebar={
       <>
+        <FileInput label="底圖" />
         <div className="control-group"><label>水印文字</label><input value={text} onChange={e => setText(e.target.value)} /></div>
         <div className="control-group"><label>透明度: {opacity.toFixed(2)}</label><input type="range" min="0.05" max="1" step="0.05" value={opacity} onChange={e => setOpacity(+e.target.value)} /></div>
         <div className="control-group"><label>顏色</label><input type="color" value={color} onChange={e => setColor(e.target.value)} /></div>

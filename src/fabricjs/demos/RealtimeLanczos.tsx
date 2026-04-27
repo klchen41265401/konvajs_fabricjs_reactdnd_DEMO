@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { fabric } from 'fabric';
 import DemoLayout from '../../components/DemoLayout';
 import useFabricResponsive from '../../components/useFabricResponsive';
+import useFileSource from '../../components/useFileSource';
 
 export default function RealtimeLanczos() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -10,19 +11,27 @@ export default function RealtimeLanczos() {
   const imgRef = useRef<fabric.Image | null>(null);
   const [scale, setScale] = useState(1);
   const [mode, setMode] = useState<'lanczos' | 'bilinear' | 'hermite'>('lanczos');
+  const { src, FileInput } = useFileSource('https://picsum.photos/id/1011/800/560', 'image/*');
 
   useEffect(() => {
     const canvas = new fabric.Canvas(canvasRef.current!);
     fabRef.current = canvas;
-    fabric.Image.fromURL('https://picsum.photos/id/1011/800/560', img => {
+    return () => { canvas.dispose(); };
+  }, []);
+
+  useEffect(() => {
+    const canvas = fabRef.current; if (!canvas) return;
+    canvas.getObjects().filter(o => o.type === 'image').forEach(o => canvas.remove(o));
+    imgRef.current = null;
+    fabric.Image.fromURL(src, img => {
       img.set({ left: 20, top: 20, selectable: false });
       imgRef.current = img;
       canvas.add(img);
-      apply(1, 'lanczos');
+      apply(scale, mode);
+      canvas.requestRenderAll();
     }, { crossOrigin: 'anonymous' });
-    return () => { canvas.dispose(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [src]);
 
   const apply = (s: number, m: string) => {
     const img = imgRef.current; if (!img) return;
@@ -39,6 +48,8 @@ export default function RealtimeLanczos() {
   return (
     <DemoLayout title="🎨 Realtime Lanczos resize" backTo="/fabricjs" backLabel="← Fabric.js 目錄" sidebar={
       <>
+        <h3>來源圖片</h3>
+        <FileInput />
         <h3>縮放演算法</h3>
         <div className="control-group">
           {(['lanczos', 'bilinear', 'hermite'] as const).map(m => (

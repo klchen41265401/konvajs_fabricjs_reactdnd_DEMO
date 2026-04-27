@@ -3,9 +3,11 @@ import { Layer, Image as KonvaImage, Group } from 'react-konva';
 import useImage from 'use-image';
 import DemoLayout from '../../components/DemoLayout';
 import ResponsiveStage from '../../components/ResponsiveStage';
+import useFileSource from '../../components/useFileSource';
 
 export default function RotateFlipImage() {
-  const [img] = useImage('https://picsum.photos/id/237/480/320', 'anonymous');
+  const { src, FileInput } = useFileSource('https://picsum.photos/id/237/480/320', 'image/*');
+  const [img] = useImage(src, 'anonymous');
   const [angle, setAngle] = useState(0);
   const [flipX, setFlipX] = useState(1);
   const [flipY, setFlipY] = useState(1);
@@ -13,6 +15,7 @@ export default function RotateFlipImage() {
   return (
     <DemoLayout title="🖼️ Rotate & Flip Image" backTo="/konvajs" backLabel="← Konva.js 目錄" sidebar={
       <>
+        <FileInput label="圖片" />
         <div className="control-group"><label>角度: {angle}°</label><input type="range" min="-180" max="180" value={angle} onChange={e => setAngle(+e.target.value)} /></div>
         <div className="control-group">
           <button type="button" onClick={() => setAngle(a => a - 90)}>↺ 90°</button>

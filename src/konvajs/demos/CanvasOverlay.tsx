@@ -2,10 +2,12 @@ import { useState } from 'react';
 import { Layer, Circle } from 'react-konva';
 import DemoLayout from '../../components/DemoLayout';
 import ResponsiveStage from '../../components/ResponsiveStage';
+import useFileSource from '../../components/useFileSource';
 
 type Marker = { id: number; x: number; y: number };
 
 export default function CanvasOverlay() {
+  const { src, FileInput } = useFileSource('https://picsum.photos/id/1043/720/540', 'image/*');
   const [markers, setMarkers] = useState<Marker[]>([
     { id: 1, x: 220, y: 180 },
     { id: 2, x: 480, y: 320 },
@@ -31,6 +33,7 @@ export default function CanvasOverlay() {
   return (
     <DemoLayout title="🖼️ Canvas Overlay" backTo="/konvajs" backLabel="← Konva.js 目錄" sidebar={
       <>
+        <FileInput label="底圖" />
         <div className="control-group">
           <label>標記清單 ({markers.length})</label>
           <div style={{ maxHeight: 280, overflow: 'auto', fontSize: 13 }}>
@@ -49,7 +52,7 @@ export default function CanvasOverlay() {
         className="stage-wrapper"
         style={{
           position: 'relative',
-          backgroundImage: 'url(https://picsum.photos/id/1043/720/540)',
+          backgroundImage: `url(${src})`,
           backgroundSize: 'cover',
           backgroundPosition: 'center',
         }}

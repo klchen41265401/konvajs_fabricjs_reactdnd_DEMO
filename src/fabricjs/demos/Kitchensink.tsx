@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { fabric } from 'fabric';
 import DemoLayout from '../../components/DemoLayout';
 import useFabricResponsive from '../../components/useFabricResponsive';
+import useFileSource from '../../components/useFileSource';
 
 type Tab = 'add' | 'object' | 'text' | 'canvas' | 'filter' | 'json';
 
@@ -16,6 +17,7 @@ export default function Kitchensink() {
   const [drawMode, setDrawMode] = useState(false);
   const [brushSize, setBrushSize] = useState(6);
   const [brushColor, setBrushColor] = useState('#0ea5e9');
+  const { src: uploadSrc, filename: uploadFilename, FileInput } = useFileSource('', 'image/*');
 
   useEffect(() => {
     const canvas = new fabric.Canvas(canvasRef.current!, { backgroundColor: bg });
@@ -44,6 +46,19 @@ export default function Kitchensink() {
       c.freeDrawingBrush = b;
     }
   }, [drawMode, brushSize, brushColor]);
+
+  useEffect(() => {
+    if (!uploadFilename) return;
+    const c = fabRef.current; if (!c) return;
+    fabric.Image.fromURL(uploadSrc, img => {
+      img.set({ left: 120 + Math.random() * 200, top: 80 + Math.random() * 200, scaleX: 0.7, scaleY: 0.7 });
+      c.add(img);
+      c.setActiveObject(img);
+      c.requestRenderAll();
+      rerender();
+    }, { crossOrigin: 'anonymous' });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [uploadFilename]);
 
   const c = fabRef.current;
   const active = c?.getActiveObject();
@@ -221,6 +236,7 @@ export default function Kitchensink() {
           <button onClick={addTextbox}>Textbox</button>
           <button onClick={addImage}>載入圖片</button>
         </div>
+        <FileInput label="從本地載入圖片" />
         <h3>畫筆</h3>
         <div className="control-group">
           <label><input type="checkbox" checked={drawMode} onChange={e => setDrawMode(e.target.checked)} /> 自由繪圖模式</label>

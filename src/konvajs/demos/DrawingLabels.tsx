@@ -3,11 +3,13 @@ import { Layer, Rect, Text, Group, Image as KonvaImage } from 'react-konva';
 import useImage from 'use-image';
 import DemoLayout from '../../components/DemoLayout';
 import ResponsiveStage from '../../components/ResponsiveStage';
+import useFileSource from '../../components/useFileSource';
 
 interface Label { x: number; y: number; w: number; h: number; text: string; color: string; }
 
 export default function DrawingLabels() {
-  const [img] = useImage('https://picsum.photos/id/1015/720/480', 'anonymous');
+  const { src, FileInput } = useFileSource('https://picsum.photos/id/1015/720/480', 'image/*');
+  const [img] = useImage(src, 'anonymous');
   const [labels, setLabels] = useState<Label[]>([]);
   const [drawing, setDrawing] = useState<{ x: number; y: number; x2: number; y2: number } | null>(null);
   const [tool, setTool] = useState<'draw' | 'move'>('draw');
@@ -41,6 +43,7 @@ export default function DrawingLabels() {
   return (
     <DemoLayout title="🖼️ Drawing Labels on Image" backTo="/konvajs" backLabel="← Konva.js 目錄" sidebar={
       <>
+        <FileInput label="標註對象圖片" />
         <h3>工具</h3>
         <div className="control-group">
           <button type="button" className={tool === 'draw' ? 'active' : ''} onClick={() => setTool('draw')}>畫框</button>

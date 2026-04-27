@@ -4,13 +4,15 @@ import Konva from 'konva';
 import useImage from 'use-image';
 import DemoLayout from '../../components/DemoLayout';
 import ResponsiveStage from '../../components/ResponsiveStage';
+import useFileSource from '../../components/useFileSource';
 
 type Sticker = { id: number; emoji: string; x: number; y: number; scale: number; rotation: number };
 
 const PALETTE = ['😀', '🎉', '⭐️', '🔥', '💧', '🌟', '🐶', '🎈'];
 
 export default function StickerEditor() {
-  const [img] = useImage('https://picsum.photos/id/1062/720/540', 'anonymous');
+  const { src, FileInput } = useFileSource('https://picsum.photos/id/1062/720/540', 'image/*');
+  const [img] = useImage(src, 'anonymous');
   const [stickers, setStickers] = useState<Sticker[]>([]);
   const [nextId, setNextId] = useState(1);
   const [selectedId, setSelectedId] = useState<number | null>(null);
@@ -55,6 +57,7 @@ export default function StickerEditor() {
   return (
     <DemoLayout title="🖼️ Sticker Editor" backTo="/konvajs" backLabel="← Konva.js 目錄" sidebar={
       <>
+        <FileInput label="底圖" />
         <div className="control-group">
           <label>貼圖調色盤</label>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>

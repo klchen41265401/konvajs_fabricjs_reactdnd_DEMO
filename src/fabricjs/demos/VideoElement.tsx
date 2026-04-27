@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { fabric } from 'fabric';
 import DemoLayout from '../../components/DemoLayout';
 import useFabricResponsive from '../../components/useFabricResponsive';
+import useFileSource from '../../components/useFileSource';
 
 const DEMO_VIDEO = 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4';
 
@@ -12,12 +13,13 @@ export default function VideoElement() {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [playing, setPlaying] = useState(false);
   const [grayscale, setGrayscale] = useState(false);
+  const { src, FileInput } = useFileSource(DEMO_VIDEO, 'video/*');
 
   useEffect(() => {
     const canvas = new fabric.Canvas(canvasRef.current!);
     fabRef.current = canvas;
     const video = document.createElement('video');
-    video.src = DEMO_VIDEO;
+    video.src = src;
     video.crossOrigin = 'anonymous';
     video.loop = true; video.muted = true; video.playsInline = true;
     video.width = 640; video.height = 360;
@@ -34,7 +36,15 @@ export default function VideoElement() {
       });
     });
     return () => { video.pause(); canvas.dispose(); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    const v = videoRef.current; if (!v) return;
+    v.src = src;
+    v.load();
+    if (playing) v.play().catch(() => { /* ignore */ });
+  }, [src]);
 
   useEffect(() => {
     const v = videoRef.current; if (!v) return;
@@ -54,6 +64,7 @@ export default function VideoElement() {
   return (
     <DemoLayout title="🎨 Video element" backTo="/fabricjs" backLabel="← Fabric.js 目錄" sidebar={
       <>
+        <FileInput label="本地影片" />
         <h3>播放控制</h3>
         <div className="control-group">
           <button type="button" onClick={() => setPlaying(p => !p)}>{playing ? '⏸ Pause' : '▶ Play'}</button>

@@ -3,13 +3,15 @@ import { Layer, Image as KImage, Rect } from 'react-konva';
 import useImage from 'use-image';
 import DemoLayout from '../../components/DemoLayout';
 import ResponsiveStage from '../../components/ResponsiveStage';
+import useFileSource from '../../components/useFileSource';
 
 const W = 720;
 const H = 540;
 const IMG_URL = 'https://konvajs.org/assets/yoda.jpg';
 
 export default function ImageBorder() {
-  const [img] = useImage(IMG_URL, 'anonymous');
+  const { src, FileInput } = useFileSource(IMG_URL, 'image/*');
+  const [img] = useImage(src, 'anonymous');
   const [color, setColor] = useState('#ef4444');
   const [width, setWidth] = useState(8);
   const [dash, setDash] = useState(false);
@@ -22,6 +24,7 @@ export default function ImageBorder() {
   return (
     <DemoLayout title="🖼️ Image Border" backTo="/konvajs" backLabel="← Konva.js 目錄" sidebar={
       <>
+        <FileInput label="圖片" />
         <div className="control-group">
           <label>邊框顏色</label>
           <input type="color" value={color} onChange={e => setColor(e.target.value)} />

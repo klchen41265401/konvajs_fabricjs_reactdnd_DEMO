@@ -4,6 +4,7 @@ import Konva from 'konva';
 import useImage from 'use-image';
 import DemoLayout from '../../components/DemoLayout';
 import ResponsiveStage from '../../components/ResponsiveStage';
+import useFileSource from '../../components/useFileSource';
 
 const W = 720;
 const H = 540;
@@ -12,7 +13,8 @@ const IMG_URL = 'https://konvajs.org/assets/yoda.jpg';
 const INITIAL = { x: 200, y: 120, w: 300, h: 300 };
 
 export default function ManualImageResize() {
-  const [img] = useImage(IMG_URL, 'anonymous');
+  const { src, FileInput } = useFileSource(IMG_URL, 'image/*');
+  const [img] = useImage(src, 'anonymous');
   const [box, setBox] = useState(INITIAL);
 
   const corners = [
@@ -57,6 +59,7 @@ export default function ManualImageResize() {
   return (
     <DemoLayout title="🖼️ Manual Image Resize" backTo="/konvajs" backLabel="← Konva.js 目錄" sidebar={
       <>
+        <FileInput label="圖片" />
         <div className="control-group">
           <button type="button" onClick={() => setBox(INITIAL)}>重設</button>
         </div>
